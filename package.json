@@ -1,12 +1,16 @@
 {
   "name": "bitcraft-tools",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "Utilities for working with Bitcraft items and recipes.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
   "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Olivia Galizia",
   "license": "ISC",
   "devDependencies": {
     "ts-node": "^10.9.2",
