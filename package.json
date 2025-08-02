@@ -4,7 +4,9 @@
   "description": "Utilities for working with Bitcraft items and recipes.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
@@ -14,5 +16,8 @@
   "devDependencies": {
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@dagrejs/graphlib": "^2.2.4"
   }
 }
