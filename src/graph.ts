@@ -1,28 +1,5 @@
 import { Graph } from '@dagrejs/graphlib';
 
-const itemGraph = new Graph({ directed: true, compound: false });
-
-itemGraph.setNode('rough-stone-chunk', 'Rough Stone Chunk');
-itemGraph.setNode('rough-pebble', 'Rough Pebble');
-itemGraph.setEdge('rough-stone-chunk', 'rough-pebble', {
-  min: 8,
-  max: 20,
-  type: 'yield',
-});
-
-itemGraph.setNode('basic-clay', 'Basic Clay Lump');
-itemGraph.setNode('basic-potters-mix', 'Basic Potters Mix');
-itemGraph.setEdge('basic-clay', 'basic-potters-mix', {
-  min: 2,
-  max: 2,
-  type: 'requirement',
-});
-itemGraph.setEdge('rough-pebble', 'basic-potters-mix', {
-  min: 5,
-  max: 5,
-  type: 'requirement',
-});
-
 interface RequirementNode {
   id: string;
   label?: string;
@@ -31,7 +8,7 @@ interface RequirementNode {
   inputs: Record<string, RequirementNode>;
 }
 
-function computeRequirementTree(
+export function computeRequirementTree(
   g: Graph,
   target: string,
   quantity: number,
@@ -87,5 +64,6 @@ function computeRequirementTree(
   };
 }
 
-const tree = computeRequirementTree(itemGraph, 'basic-potters-mix', 8);
-console.log(JSON.stringify(tree, null, 2));
+export function createEmptyItemGraph(): Graph {
+  return new Graph({ directed: true, compound: false });
+}
