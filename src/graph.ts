@@ -1,4 +1,18 @@
-import { Graph } from '@dagrejs/graphlib';
+import { Graph, GraphOptions } from '@dagrejs/graphlib';
+
+type TraversalMode = 'requirements-only' | 'yields-only';
+type EdgeType = 'requirement' | 'yield';
+
+interface ComputeOptions {
+  mode: TraversalMode;
+  visited?: Set<string>;
+}
+
+interface EdgeData {
+  type: EdgeType;
+  min: number;
+  max: number;
+}
 
 interface RequirementNode {
   id: string;
@@ -8,30 +22,73 @@ interface RequirementNode {
   inputs: Record<string, RequirementNode>;
 }
 
-export function computeRequirementTree(
-  g: Graph,
+export function planCraftingRequirements(
+  graph: Graph,
   target: string,
   quantity: number,
   quantityMax: number = quantity
 ): RequirementNode {
-  const inEdges = g.inEdges(target) ?? [];
+  return computeRequirementTree(graph, target, quantity, quantityMax, {
+    mode: 'requirements-only',
+  });
+}
 
+export function estimateInputForYields(
+  graph: Graph,
+  outputItem: string,
+  desiredQuantity: number,
+  maxQuantity: number = desiredQuantity
+): RequirementNode {
+  return computeRequirementTree(
+    graph,
+    outputItem,
+    desiredQuantity,
+    maxQuantity,
+    { mode: 'yields-only' }
+  );
+}
+
+function computeRequirementTree(
+  g: Graph,
+  target: string,
+  quantity: number,
+  quantityMax: number = quantity,
+  options: ComputeOptions
+): RequirementNode {
+  const { visited = new Set(), mode } = options;
+
+  if (visited.has(target)) {
+    return {
+      id: target,
+      label: g.node(target) ?? target,
+      min: quantity,
+      max: quantityMax,
+      inputs: {},
+    };
+  }
+
+  visited.add(target);
+
+  const inEdges = g.inEdges(target) ?? [];
   const label = g.node(target) ?? target; // fallback to Id if no label
+  const inputs: Record<string, RequirementNode> = {};
 
   if (inEdges.length === 0) {
     // Leaf node
     return { id: target, label, min: quantity, max: quantityMax, inputs: {} };
   }
 
-  const inputs: Record<string, RequirementNode> = {};
-
   for (const edge of inEdges) {
-    const { v: inputNode } = edge;
-    const edgeData = g.edge(edge);
+    const edgeData: EdgeData = g.edge(edge);
+    if (!edgeData) continue;
 
-    if (!edgeData || edgeData.min === undefined || edgeData.max === undefined) {
-      throw new Error(`Missing min/max on edge from ${inputNode} to ${target}`);
-    }
+    const shouldUse =
+      (mode === 'requirements-only' && edgeData.type === 'requirement') ||
+      (mode === 'yields-only' && edgeData.type === 'yield');
+
+    if (!shouldUse) continue;
+
+    const inputNode = edge.v;
 
     let inputMin: number;
     let inputMax: number;
@@ -39,11 +96,10 @@ export function computeRequirementTree(
     if (edgeData.type === 'requirement') {
       inputMin = edgeData.min * quantity;
       inputMax = edgeData.max * quantityMax;
-    } else if (edgeData.type === 'yield') {
+    } else {
+      // yield edge
       inputMin = Math.ceil(quantity / edgeData.max);
       inputMax = Math.ceil(quantityMax / edgeData.min);
-    } else {
-      throw new Error(`Unknown edge type: ${edgeData.type}`);
     }
 
     // Recurse into the input node
@@ -51,7 +107,8 @@ export function computeRequirementTree(
       g,
       inputNode,
       inputMin,
-      inputMax
+      inputMax,
+      { mode, visited: new Set(visited) }
     );
   }
 
